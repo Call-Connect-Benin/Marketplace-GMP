@@ -11,3 +11,74 @@ generator client {
 datasource db {
   provider = "postgresql"
 }
+
+model Listing {
+  id         String        @id @default(cuid())
+  title      String
+  category   Category      @relation(fields: [categoryId], references: [id])
+  categoryId String        @map("category")
+  city       String
+  price      Decimal       @db.Decimal(10, 2)
+  status     ListingStatus @default(AVAILABLE)
+  images     String[]
+  seoScore   Int?          @map("seo_score")
+  createdAt  DateTime      @default(now()) @map("created_at")
+
+  orders Order[]
+
+  // @@map("listings")
+}
+
+enum ListingStatus {
+  AVAILABLE
+  SOLD
+
+  @@map("listing_status")
+}
+
+model Order {
+  id               String      @id @default(cuid())
+  listing          Listing     @relation(fields: [listingId], references: [id])
+  listingId        String      @map("listing_id")
+  buyer            Profile     @relation(fields: [buyerId], references: [id])
+  buyerId          String      @map("buyer_id")
+  stripeSessionId  String?     @map("stripe_session_id")
+  status           OrderStatus @default(PENDING)
+  createdAt        DateTime    @default(now()) @map("created_at")
+
+  // @@map("orders")
+}
+
+enum OrderStatus {
+  PENDING
+  PAID
+  TRANSFERRED
+  CANCELLED
+  REFUNDED
+
+  @@map("order_status")
+}
+
+model Profile {
+  id        String   @id // = auth.uid
+  email     String   @unique
+  fullName  String?  @map("full_name")
+  phone     String?
+  createdAt DateTime @default(now()) @map("created_at")
+
+  orders Order[]
+
+  // @@map("profiles")
+}
+
+model Category {
+  id      String @id @default(cuid())
+  slug    String @unique
+  nameFr  String @map("name_fr")
+  nameEn  String @map("name_en")
+  icon    String?
+
+  listings Listing[]
+
+  // @@map("categories")
+}
